@@ -11,7 +11,7 @@
 | Uncertain files preserved | All existing files were preserved. `node_modules/` and `dist/` were left untouched; no generated or user files were deleted. |
 | License | No license file was found; no license was added. |
 
-The initial required `git status --short --branch` command failed with “not a git repository.” Read-only attempts to inspect remotes, history, staged/unstaged diffs, and diff whitespace also confirmed the missing repository metadata; a scan found no nested `.git` directory. Therefore the current branch, remotes, history, tracked files, and upstream state could not be inspected. No Git mutation (stage, commit, or push) or database operation was attempted.
+The original workspace did not contain Git metadata. At the user's explicit direction, a new Git repository was initialized on `main`; 83 inventoried project files were staged, reviewed, and committed as the initial project commit. The private `.env`, `node_modules/`, and `dist/` were excluded. GitHub CLI is installed but unauthenticated, so a GitHub repository was not created and no remote was configured or pushed. No database operation was attempted.
 
 Password visibility was added to all eight password fields across Student login, registration, legacy password setup, reset-password and confirmation, and Management login. The shared `PasswordInput` keeps each field's toggle state independent, defaults to hidden, preserves the controlled value, uses `type="button"`, and announces Show/Hide with `aria-label`, `aria-pressed`, and `aria-controls`. Password fields use explicit accessible labels and are no longer wrapped around the interactive toggle by a `<label>`. Forgot Password has no password field; no change was needed there. Password hashing, transport, and storage were not changed.
 
@@ -43,19 +43,19 @@ Local API checks: `/api/health` returned HTTP 200; anonymous Management auth-ses
 
 | Item | Result |
 |---|---|
-| Repository remote name | Unavailable — no `.git` metadata |
-| Current branch | Unavailable |
-| Commit hash/message | No commit created |
-| Push result | Not attempted; safe push cannot proceed without the existing remote and branch metadata |
-| Upstream tracking | Unavailable |
-| Final working-tree status | Unavailable; `git status` reports this directory is not a Git repository |
+| Repository remote name | None; GitHub CLI authentication is required before safe repository creation. |
+| Current branch | `main` |
+| Commit hash/message | `e028f6e` — `Initial commit: PREPPX student learning and management platform` |
+| Push result | Not attempted; `gh auth status` reports no authenticated GitHub host. |
+| Upstream tracking | None; no remote exists. |
+| Final working-tree status | Verified after recording this report correction; see the task result. |
 
-No remote was invented, no history was rewritten, and no files were staged or committed.
+No remote was invented and no history was rewritten. The initial project files are committed locally; this report correction will be recorded separately.
 
 ## E. Remaining issues
 
-- To complete the requested commit and push safely, restore/open the actual Git working tree (including its `.git` metadata) at this project path. Then inspect its status/remotes/history and review the diff before staging or pushing.
+- To complete the GitHub release, authenticate with `gh auth login --web`. Then create the private repository from this directory with `gh repo create PREPPX --private --source . --remote origin`; if GitHub reports the name is taken, stop rather than connecting another repository. Verify `git remote -v` points to the newly created PREPPX repository, then use `git push -u origin main`.
 - The application has no lint script and its tests are focused unit tests rather than full authenticated integration workflows.
 - Password visibility was exercised in the browser across Student login/registration, legacy password setup, reset confirmation, and Management login. The project has no DOM/component interaction test runner, so the automated component test covers server-rendered defaults/semantics, with interaction behavior checked in the browser. Password authentication submissions were not tested with real credentials.
-- A GitHub release remains blocked until the actual Git working-tree path with `.git` metadata is supplied; this directory still returns “not a git repository” for `git status`.
+- A GitHub release remains blocked until GitHub CLI is authenticated. The current directory is now a valid Git working tree on `main`.
 - Authenticated user journeys and optional Resend/S3 integrations remain subject to the limitations recorded in [the final audit tracker](PREPPX_FINAL_AUDIT.md).
