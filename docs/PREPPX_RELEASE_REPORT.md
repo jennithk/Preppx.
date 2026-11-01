@@ -84,7 +84,8 @@ No `.env` file is included in the changes; `.env` is ignored. Generated `dist/` 
 - Branch: `main`, tracking `origin/main`.
 - Remote `main` was reachable and matched the pre-release local base commit before changes.
 - `gh auth status` reported that GitHub CLI is not authenticated. Git read access to the configured remote succeeded; Git push still requires available Git credentials.
-- Release commit hash: **PENDING final commit**.
-- Push status: **PENDING final normal push and verification**.
+- Release commit: `0439ffdecc0b33898e3aaf8391a0ee82558928af` (`chore: finalize PREPPX release and handoff documentation`).
+- Push status: **PASS** — normal `git push origin main` succeeded. `git ls-remote origin refs/heads/main` returned the same release commit hash, and the local branch tracked `origin/main` with a clean worktree immediately after push.
+- This report's publication metadata is committed separately as a documentation-only follow-up. The final repository HEAD is reported in the completion message; the release commit above is the feature/documentation payload commit.
 
-Replace the pending Git fields after the release commit/push attempt. Never force-push or overwrite divergent remote commits.
+No force-push or history rewrite was used.
