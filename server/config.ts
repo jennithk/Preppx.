@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 const optionalNonempty = z.string().trim().min(1).optional();
 const httpUrl = z.string().url().refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), 'Use an HTTP or HTTPS URL.');
+const optionalEmailSetting = z.preprocess(
+  (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+  z.string().trim().min(1).optional(),
+);
 
 const environmentSchema = z.object({
   DATABASE_URL: z.string().url().refine((value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol), 'Use a PostgreSQL connection URL.'),
@@ -16,8 +20,8 @@ const environmentSchema = z.object({
   MANAGEMENT_BOOTSTRAP_NAME: optionalNonempty,
   MANAGEMENT_BOOTSTRAP_EMAIL: z.string().email().optional(),
   MANAGEMENT_BOOTSTRAP_PASSWORD: z.string().min(12).optional(),
-  RESEND_API_KEY: optionalNonempty,
-  EMAIL_FROM: z.string().trim().min(3).optional(),
+  RESEND_API_KEY: optionalEmailSetting,
+  EMAIL_FROM: optionalEmailSetting,
   S3_ENDPOINT: httpUrl.optional(),
   S3_REGION: optionalNonempty,
   S3_BUCKET: optionalNonempty,
@@ -49,7 +53,10 @@ if (storageValues.some(Boolean) && !storageValues.every(Boolean)) {
 }
 
 export const hasObjectStorage = storageValues.every(Boolean);
-if (Boolean(config.RESEND_API_KEY) !== Boolean(config.EMAIL_FROM)) {
-  throw new Error('Configure both RESEND_API_KEY and EMAIL_FROM for student OTP delivery, or leave both empty.');
+export function isValidEmailSender(value: string | undefined) {
+  if (!value || /[\r\n]/.test(value)) return false;
+  const match = /^(?:[^<>]+\s*<([^<>]+)>|([^<>]+))$/.exec(value);
+  const address = match?.[1]?.trim() ?? match?.[2]?.trim();
+  return Boolean(address && z.string().email().safeParse(address).success);
 }
-export const hasEmailDelivery = Boolean(config.RESEND_API_KEY && config.EMAIL_FROM);
+export const hasEmailDelivery = Boolean(config.RESEND_API_KEY && isValidEmailSender(config.EMAIL_FROM));

@@ -9,6 +9,7 @@ import { managementAuthRouter } from './routes/auth.js';
 import { managementRouter } from './routes/management.js';
 import { studentAuthRouter } from './routes/studentAuth.js';
 import { studentRouter } from './routes/student.js';
+import { managementClassroomsRouter, studentClassroomsRouter } from './routes/classrooms.js';
 
 export function createApp() {
   const app = express();
@@ -34,8 +35,10 @@ export function createApp() {
 
   app.use('/api/management/auth', managementAuthRouter);
   app.use('/api/management', managementRouter);
+  app.use('/api/management/classrooms', managementClassroomsRouter);
   app.use('/api/student/auth', studentAuthRouter);
   app.use('/api/student', studentRouter);
+  app.use('/api/student/classrooms', studentClassroomsRouter);
 
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     const status = typeof error === 'object' && error && 'status' in error && typeof error.status === 'number' ? error.status : 500;

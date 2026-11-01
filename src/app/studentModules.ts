@@ -37,6 +37,15 @@ export const studentModules: StudentModule[] = [
     features: ['Assignment instructions and deadlines', 'Text or file submissions', 'Submission status and feedback'],
   },
   {
+    path: 'classrooms',
+    label: 'My classrooms',
+    description: 'View class announcements, assignments, learning materials and returned grades.',
+    eyebrow: 'YOUR LEARNING',
+    icon: LibraryBig,
+    group: 'Learning',
+    features: ['Join a classroom with a teacher code', 'Class stream and published classwork', 'Assignment submissions and feedback'],
+  },
+  {
     path: 'courses',
     label: 'Courses',
     description: 'Browse published courses, lessons and learning materials.',

@@ -201,20 +201,32 @@ export const authService = {
     } satisfies PendingOtp));
   },
 
-  async verifyOtp(code: string): Promise<{ purpose: AuthPurpose; email: string }> {
+  async verifyOtp(code: string, context?: { email: string; purpose: AuthPurpose }): Promise<{ purpose: AuthPurpose; email: string }> {
     const raw = window.sessionStorage.getItem(PENDING_KEY);
-    if (!raw) throw new Error('Your verification session has expired. Please start again.');
-    const pending = JSON.parse(raw) as PendingOtp;
+    let pending: PendingOtp | null = null;
+    if (raw) {
+      try {
+        pending = JSON.parse(raw) as PendingOtp;
+      } catch {
+        throw new Error('Your verification session is invalid. Please start again.');
+      }
+    }
+    const pendingForVerification = pending && (!context || (pending.email === context.email && pending.purpose === context.purpose))
+      ? pending
+      : null;
+    const email = context?.email ?? pendingForVerification?.email;
+    const purpose = context?.purpose ?? pendingForVerification?.purpose;
+    if (!email || !purpose) throw new Error('Your verification session has expired. Please start again.');
     const result = await apiRequest<{ student?: ApiStudent; purpose?: 'reset'; email: string }>('/auth/verify', {
       method: 'POST',
-      body: JSON.stringify({ email: pending.email, purpose: pending.purpose, code }),
+      body: JSON.stringify({ email, purpose, code }),
     });
-    window.sessionStorage.removeItem(PENDING_KEY);
-    if (pending.purpose === 'reset') return { purpose: pending.purpose, email: pending.email };
+    if (pendingForVerification) window.sessionStorage.removeItem(PENDING_KEY);
+    if (purpose === 'reset') return { purpose, email };
 
     if (result.student) {
       storeServerSession(result.student);
-      let profile = pending.profile ?? this.getLocalStudentProfile(pending.email);
+      let profile = pendingForVerification?.profile ?? this.getLocalStudentProfile(email);
       if (profile) {
         profile = { ...profile, fullName: result.student.fullName, email: result.student.email, passwordSetupCompleted: true };
         storeServerProfile(profile);
@@ -229,7 +241,7 @@ export const authService = {
         });
       }
     }
-    return { purpose: pending.purpose, email: pending.email };
+    return { purpose, email };
   },
 
   async completePasswordReset(password: string) {

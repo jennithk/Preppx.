@@ -9,6 +9,13 @@ export type ManagementRow = {
   [key: string]: unknown;
 };
 
+export class ManagementApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'ManagementApiError';
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/management${path}`, {
     ...init,
@@ -24,7 +31,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const message = body && typeof body === 'object' && 'error' in body && typeof body.error === 'string'
       ? body.error
       : `The request failed (${response.status}).`;
-    throw new Error(message);
+    throw new ManagementApiError(message, response.status);
   }
   return body as T;
 }

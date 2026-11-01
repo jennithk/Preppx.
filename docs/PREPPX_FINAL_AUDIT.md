@@ -165,3 +165,17 @@ This table traces representative workflows, not every route and request shape.
 - `GET /api/health` — HTTP 200; database connected.
 - Anonymous Management overview/directory and Student course/progress requests — HTTP 401.
 - Local common entry page — HTTP 200; `/login` displayed separate Student and Management choices and explicitly stated that public Management registration is unavailable.
+
+## Release validation addendum — 2026-11-01
+
+This addendum supersedes older "not yet applied" classroom-schema notes above for the database selected by the local `.env` during this validation. Historical findings remain useful context and are not rewritten.
+
+- Inspected `package.json`, README, ignore rules, environment template, existing reports, route/auth boundaries, classroom APIs and UI, student classroom integration, database migration, and current Git state.
+- The pre-migration schema check found the classroom tables and classroom references were absent. Reviewed `server/db/schema.sql`; it uses idempotent additive DDL and contains no `DROP`, `TRUNCATE`, `DELETE`, `UPDATE`, or `INSERT` statements. Ran `npm run db:migrate` twice successfully, then verified classroom tables and class-linked columns via schema introspection. No reset, bootstrap, fake account, or content seed was run. No backup or record-level comparison was performed.
+- `GET /api/health` returned HTTP 200 with PostgreSQL connected. Anonymous Student and Management protected endpoints returned HTTP 401.
+- Environment presence was checked without printing values: database, signing secret, and frontend origin are configured; Resend settings and all S3 settings are empty. No email or file-transfer claim is made.
+- Browser smoke verified common account selection, Registration password fields hidden by default and independently toggleable, and hidden Management login password. No account was submitted and no authenticated portal workflow was run.
+- Current-session code fixes surface non-401 Management session-bootstrap errors and disambiguate classroom material node labels with hierarchy and node type.
+- `npm run typecheck`, `npm run typecheck:api`, `npm test` (6 tests), `npm run build`, and `git diff --check` passed. No lint script or API/browser integration-test runner exists.
+- Authenticated classroom publishing, enrollment, student submissions, assessment, grade/feedback persistence, role-crossing behavior, actual Resend delivery, and S3 file transfer remain unverified. See [PREPPX_FINAL_HANDOFF.md](PREPPX_FINAL_HANDOFF.md) for the current feature matrix and next actions.
+- Git publication was not part of this audit addendum at the time it was written; see [PREPPX_RELEASE_REPORT.md](PREPPX_RELEASE_REPORT.md) for final commit and push evidence.

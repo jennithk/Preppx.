@@ -29,9 +29,19 @@ Some practice, resource, and schedule views depend on published content or conne
 - Existing student directory, profile, and progress review.
 - Course, subject, and learning-sequence management.
 - Learning materials, assignments, assessments, grading/review, live classes, and announcements.
+- Classroom workspace for class rosters, joining codes, stream posts, topic-organized classwork, calendar, review queue, and gradebook.
+- Student classroom access for enrolled students, using existing courses and classwork records.
 - Reporting and progress monitoring.
 
 The Management UI does not offer a public student-account creation workflow. Server-side authorization protects management and student APIs separately.
+
+## Classroom management
+
+The unified Management Portal's Classes area links each classroom to a reusable published course; creating a classroom does not copy course content. Management can enroll existing student accounts, share a joining code, publish stream announcements and classwork, schedule live classes, and review grades. Students can join with their authenticated PREPPX account and see only classrooms where they are enrolled.
+
+Classroom tables and optional classroom references on existing classwork are additive entries in `server/db/schema.sql`. Apply them with `npm run db:migrate` only after verifying the configured database and taking an appropriate backup. The migration is not run automatically by the application. See [the classroom implementation report](docs/CLASSROOM_PORTAL_IMPLEMENTATION.md) for functionality and verification status.
+
+For the current release-readiness matrix, known blockers, environment setup, and next-agent instructions, see the [final AI handoff](docs/PREPPX_FINAL_HANDOFF.md) and [release report](docs/PREPPX_RELEASE_REPORT.md).
 
 ## Technology stack
 
@@ -122,7 +132,7 @@ The React application and shared TypeScript utilities are in `src/` and `shared/
 
 ## Environment variables
 
-Set names and local placeholders in `.env`; never commit real values.
+Set names and local placeholders in `.env`; never commit real values. To enable student registration, sign-in codes, and password recovery, create a Resend API key and verify the sender domain in Resend. Set `RESEND_API_KEY` and `EMAIL_FROM` together; use a sender on that verified domain, such as `PREPPX <no-reply@your-verified-domain.com>`.
 
 | Variable | Requirement | Purpose |
 |---|---|---|
@@ -135,8 +145,8 @@ Set names and local placeholders in `.env`; never commit real values.
 | `MANAGEMENT_BOOTSTRAP_NAME` | Optional; all three bootstrap values required together | Management account name for the bootstrap command. |
 | `MANAGEMENT_BOOTSTRAP_EMAIL` | Optional; all three bootstrap values required together | Management account email for the bootstrap command. |
 | `MANAGEMENT_BOOTSTRAP_PASSWORD` | Optional; all three bootstrap values required together | Bootstrap password; at least 12 characters. |
-| `RESEND_API_KEY` | Optional integration; configure together with `EMAIL_FROM` | Resend API credential for student OTP email. Without both settings, OTP workflows return a configuration error. |
-| `EMAIL_FROM` | Optional integration; configure together with `RESEND_API_KEY` | Verified sender address for OTP email. |
+| `RESEND_API_KEY` | Required for student registration, sign-in OTP, and password recovery | Resend API key. Configure it together with `EMAIL_FROM`; without both, these email-dependent workflows return a configuration error. |
+| `EMAIL_FROM` | Required with `RESEND_API_KEY` | Sender email, optionally formatted as `PREPPX <no-reply@your-domain.com>`. The address/domain must be verified in Resend and authorized for the API key. |
 | `S3_ENDPOINT` | Optional integration; configure all five S3 values together | S3-compatible storage endpoint over HTTP(S). |
 | `S3_REGION` | Optional integration; configure all five S3 values together | Object-storage region. |
 | `S3_BUCKET` | Optional integration; configure all five S3 values together | Private object-storage bucket. |

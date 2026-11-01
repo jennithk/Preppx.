@@ -12,6 +12,7 @@ import { CoursesPage } from './CoursesPage';
 import { AssignmentsPage } from './AssignmentsPage';
 import { LiveClassesPage } from './LiveClassesPage';
 import { PublishedAssessmentsPage } from './PublishedAssessmentsPage';
+import { ClassroomsPage } from './ClassroomsPage';
 import { studentApi } from '../services/studentApi';
 import type { LearningInterest } from '../../auth/types/auth';
 import {
@@ -590,6 +591,7 @@ export function StudentModulePage({ module }: StudentModulePageProps) {
     case 'notifications': return <NotificationsPage module={module} />;
     case 'profile': return <ProfilePage module={module} />;
     case 'progress': return <ProgressPage module={module} />;
+    case 'classrooms': return <ClassroomsPage />;
     default: return <ModuleShell module={module}><EmptyState title="Module not found" detail="Choose a module from the student navigation." /></ModuleShell>;
   }
 }

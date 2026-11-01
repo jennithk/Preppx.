@@ -167,6 +167,17 @@ studentAuthRouter.post('/migration', limiter, asyncRoute(async (request, respons
 
 studentAuthRouter.post('/resend', limiter, asyncRoute(async (request, response) => {
   const { email, purpose } = challengeSchema.parse(request.body);
+  const recent = await pool.query<{ retry_after: number | null }>(`
+    SELECT greatest(0, ceil(extract(epoch FROM (created_at + interval '60 seconds' - now())))::int) AS retry_after
+    FROM student_auth_challenges WHERE email = $1 AND purpose = $2
+    ORDER BY created_at DESC LIMIT 1
+  `, [email, purpose]);
+  const retryAfter = recent.rows[0]?.retry_after ?? 0;
+  if (retryAfter > 0) {
+    response.setHeader('Retry-After', String(retryAfter));
+    response.status(429).json({ error: `Wait ${retryAfter} seconds before requesting another verification code.` });
+    return;
+  }
   if (purpose === 'register' || purpose === 'migration') {
     const challenge = await pool.query<{ payload: Record<string, unknown> }>(
       `SELECT payload FROM student_auth_challenges

@@ -75,6 +75,69 @@ CREATE TABLE IF NOT EXISTS course_enrollments (
   PRIMARY KEY (student_id, course_id)
 );
 
+CREATE TABLE IF NOT EXISTS classrooms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  subject text NOT NULL,
+  course_id uuid NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+  section text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  join_code text NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  created_by uuid REFERENCES management_users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS classroom_enrollments (
+  classroom_id uuid NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+  student_id uuid NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  joined_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (classroom_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS classroom_topics (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id uuid NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  position integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (classroom_id, title)
+);
+
+CREATE TABLE IF NOT EXISTS classroom_posts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id uuid NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+  created_by uuid REFERENCES management_users(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  body text NOT NULL,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'archived')),
+  is_pinned boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS classroom_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL REFERENCES classroom_posts(id) ON DELETE CASCADE,
+  student_id uuid NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS classroom_resources (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  classroom_id uuid NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+  topic_id uuid REFERENCES classroom_topics(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  description text NOT NULL DEFAULT '',
+  external_url text NOT NULL,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'archived')),
+  created_by uuid REFERENCES management_users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS learning_materials (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
@@ -97,6 +160,7 @@ CREATE TABLE IF NOT EXISTS live_classes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,
   description text NOT NULL DEFAULT '',
+  classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL,
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
   subject text NOT NULL,
   instructor text NOT NULL,
@@ -114,6 +178,8 @@ CREATE TABLE IF NOT EXISTS assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,
   instructions text NOT NULL,
+  classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL,
+  classroom_topic_id uuid REFERENCES classroom_topics(id) ON DELETE SET NULL,
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
   subject text NOT NULL,
   due_at timestamptz,
@@ -145,6 +211,8 @@ CREATE TABLE IF NOT EXISTS assessments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,
   description text NOT NULL DEFAULT '',
+  classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL,
+  classroom_topic_id uuid REFERENCES classroom_topics(id) ON DELETE SET NULL,
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
   subject text NOT NULL,
   duration_minutes integer,
@@ -182,6 +250,11 @@ CREATE TABLE IF NOT EXISTS assessment_attempts (
 
 ALTER TABLE assessment_attempts ADD COLUMN IF NOT EXISTS feedback text NOT NULL DEFAULT '';
 ALTER TABLE assessment_attempts ADD COLUMN IF NOT EXISTS reviewed_at timestamptz;
+ALTER TABLE live_classes ADD COLUMN IF NOT EXISTS classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS classroom_topic_id uuid REFERENCES classroom_topics(id) ON DELETE SET NULL;
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS classroom_id uuid REFERENCES classrooms(id) ON DELETE SET NULL;
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS classroom_topic_id uuid REFERENCES classroom_topics(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS assessment_responses (
   attempt_id uuid NOT NULL REFERENCES assessment_attempts(id) ON DELETE CASCADE,
@@ -251,3 +324,9 @@ CREATE INDEX IF NOT EXISTS student_auth_challenges_email_created_idx ON student_
 CREATE INDEX IF NOT EXISTS enrollments_student_course_idx ON course_enrollments(student_id, course_id);
 CREATE INDEX IF NOT EXISTS assignment_submissions_student_idx ON assignment_submissions(student_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS assessment_attempts_student_idx ON assessment_attempts(student_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS classroom_enrollments_student_idx ON classroom_enrollments(student_id, joined_at DESC);
+CREATE INDEX IF NOT EXISTS classroom_posts_recent_idx ON classroom_posts(classroom_id, status, is_pinned DESC, created_at DESC);
+CREATE INDEX IF NOT EXISTS classroom_resources_status_idx ON classroom_resources(classroom_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS assignments_classroom_due_idx ON assignments(classroom_id, due_at) WHERE classroom_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS assessments_classroom_schedule_idx ON assessments(classroom_id, starts_at) WHERE classroom_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS live_classes_classroom_schedule_idx ON live_classes(classroom_id, starts_at) WHERE classroom_id IS NOT NULL;

@@ -236,6 +236,7 @@ studentRouter.get('/assignments', asyncRoute(async (request, response) => {
     LEFT JOIN assignment_submissions sub ON sub.assignment_id = a.id AND sub.student_id = $1
     WHERE a.status = 'published' AND (a.course_id IS NULL OR c.status = 'published')
       AND (a.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments e WHERE e.student_id = $1 AND e.course_id = a.course_id))
+      AND (a.classroom_id IS NULL OR EXISTS (SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $1))
     ORDER BY a.due_at NULLS LAST, a.created_at DESC
   `, [studentId]);
   response.json({ assignments: result.rows });
@@ -250,6 +251,7 @@ studentRouter.post('/assignments/:assignmentId/submissions', asyncRoute(async (r
     WHERE a.id = $1 AND a.status = 'published' AND (a.course_id IS NULL OR c.status = 'published')
       AND (a.due_at IS NULL OR a.due_at >= now())
       AND (a.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments e WHERE e.student_id = $2 AND e.course_id = a.course_id))
+      AND (a.classroom_id IS NULL OR EXISTS (SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $2))
   `, [assignmentId, studentId]);
   if (!assignment.rows[0]) {
     response.status(404).json({ error: 'Assignment unavailable or its deadline has passed.' });
@@ -305,6 +307,7 @@ studentRouter.post('/assignments/:assignmentId/attachment', assignmentUpload.sin
     WHERE a.id = $1 AND a.status = 'published' AND (a.due_at IS NULL OR a.due_at >= now())
       AND (a.course_id IS NULL OR c.status = 'published')
       AND (a.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments e WHERE e.student_id = $2 AND e.course_id = a.course_id))
+      AND (a.classroom_id IS NULL OR EXISTS (SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $2))
   `, [assignmentId, studentId]);
   if (!assignment.rows[0]) {
     response.status(404).json({ error: 'Assignment unavailable or its deadline has passed.' });
@@ -363,6 +366,7 @@ studentRouter.get('/assessments', asyncRoute(async (request, response) => {
     WHERE a.status = 'published' AND (a.starts_at IS NULL OR a.starts_at <= now()) AND (a.ends_at IS NULL OR a.ends_at > now())
       AND (a.course_id IS NULL OR c.status = 'published')
       AND (a.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments e WHERE e.student_id = $1 AND e.course_id = a.course_id))
+      AND (a.classroom_id IS NULL OR EXISTS (SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $1))
     ORDER BY a.starts_at NULLS FIRST, a.created_at DESC
   `, [studentId]);
   response.json({ assessments: result.rows });
@@ -379,6 +383,7 @@ studentRouter.post('/assessments/:assessmentId/attempts', asyncRoute(async (requ
       WHERE a.id = $1 AND a.status = 'published' AND (a.starts_at IS NULL OR a.starts_at <= now()) AND (a.ends_at IS NULL OR a.ends_at > now())
         AND (a.course_id IS NULL OR c.status = 'published')
         AND (a.course_id IS NULL OR EXISTS (SELECT 1 FROM course_enrollments e WHERE e.student_id = $2 AND e.course_id = a.course_id))
+        AND (a.classroom_id IS NULL OR EXISTS (SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $2))
       FOR UPDATE OF a
     `, [assessmentId, studentId]);
     if (!assessment.rows[0]) {
@@ -426,6 +431,9 @@ studentRouter.post('/assessments/attempts/:attemptId/submit', asyncRoute(async (
       SELECT at.assessment_id, at.started_at, a.course_id, a.subject, a.duration_minutes FROM assessment_attempts at
       JOIN assessments a ON a.id = at.assessment_id
       WHERE at.id = $1 AND at.student_id = $2 AND at.submitted_at IS NULL
+        AND (a.classroom_id IS NULL OR EXISTS (
+          SELECT 1 FROM classroom_enrollments ce WHERE ce.classroom_id = a.classroom_id AND ce.student_id = $2
+        ))
       FOR UPDATE OF at
     `, [attemptId, studentId]);
     if (!attempt.rows[0]) {

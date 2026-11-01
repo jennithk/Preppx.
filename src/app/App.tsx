@@ -16,7 +16,7 @@ import { RequireStudent } from '../features/auth/components/RequireStudent';
 import { authService } from '../features/auth/services/authService';
 import { studentModules } from './studentModules';
 import { studentRoutes } from './studentRoutes';
-import { ManagementPortalPage } from '../features/management/pages/ManagementPortalPage';
+import { ClassroomPortalPage } from '../features/management/pages/ClassroomPortalPage';
 
 function StudentEntryRedirect() {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ export function App() {
           )}
         />
 
-        <Route path="/management/*" element={<ManagementPortalPage />} />
+        <Route path="/management/*" element={<ClassroomPortalPage />} />
         <Route path="/login" element={<PageTransition><AccountLoginPage /></PageTransition>} />
 
         {/* Student application: its own public auth routes and protected workspace. */}
